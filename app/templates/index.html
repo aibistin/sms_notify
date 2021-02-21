@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+
+{% block app_content %}
+<p>Hi {{ current_user.username }}</p>
+{% if form %}
+<form action="" method="post">
+    {{ form.hidden_tag() }}
+    <p>
+        {{ form.message.label }}
+        {{ form.message(cols=32, rows=4) }}</br>
+        {% for error in form.message.errors %}
+        <span="style=color: red;">[{{ error }}}]</span>
+            {% endfor %}
+    </p>
+    <p>{{ form.submit() }}</p>
+</form>
+{% endif %}
+
+{% if messages %}
+
+    {% for msg in messages %}
+        {% include '_message.html' %}
+    {% endfor %}
+    <nav aria-label="...">
+        <ul class="pager">
+            <li class="previous{% if not prev_url %} disabled{% endif %}">
+                <a href="{{ prev_url or '#' }}">
+                    <span aria-hidden="true">&larr;</span> Newer messages
+                </a>
+            </li>
+            <li class="next{% if not next_url %} disabled{% endif %}">
+                <a href="{{ next_url or '#' }}">
+                    Older messages <span aria-hidden="true">&rarr;</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+
+{% endif %}
+
+{% if msg %}
+<h1>Message Sent</h1>
+if u.set_password('rave')
+<ul>
+    <li>From: {{ msg.from_ }}</li>
+    <li>To: {{ msg.to }}</li>
+    <li>Body: {{ msg.body }}</li>
+    <li>SID: {{ msg.sid }}</li>
+</ul>
+{% else %}
+<p>{{ greeting }}</p>
+{% endif %}
+
+{% endblock %}

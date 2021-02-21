@@ -1,0 +1,47 @@
+{% extends 'bootstrap/base.html' %}
+{% block scripts %}
+   {{ super() }}
+   {{ moment.include_moment() }}
+{% endblock %}
+<html>
+    {% block title %}
+    <head>
+        {% if title %}
+            <title>{{ title }}</title>
+        {% else %}
+            <title>SMS Sender</title>
+        {% endif %}
+    </head>
+    {% endblock %}
+    <body>
+        {% block navbar %}
+        <nav class="navbar navbar-default">
+            <a href="{{ url_for('main.home') }}">Home</a>
+            {% if current_user.is_anonymous %}
+            <a href="{{ url_for('auth.login') }}">Login</a>
+            {% else %}
+            <a href="{{ url_for('main.explore') }}">Explore</a>
+            <a href="{{ url_for('main.send_message') }}">SendMsg</a>
+            <a href="{{ url_for('main.user', username=current_user.username ) }}">Profile</a>
+            <a href="{{ url_for('auth.logout') }}">Logout</a>
+            {% endif %}
+        </nav>
+        {% endblock %}
+        <hr/>
+        {% block content %}
+        <div class="container">
+        {% with messages = get_flashed_messages() %}
+        {% if messages %}
+        <ul>
+        {% for msg in messages %}
+            <div class="alert alert-info" role="alert">{{ msg }}</div>
+        {% endfor %}
+        </ul>
+        {% endif %}
+        {% endwith %}
+
+        {% block app_content %}{% endblock %}
+        </div>
+        {% endblock %}
+    </body>
+</html>
