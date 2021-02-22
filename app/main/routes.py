@@ -57,7 +57,7 @@ def send_message():
         return redirect(url_for('main.home'))
 
     msg = {'body': "One long message",
-           'from_': '+18593748177', 'to': '+19177108047'}
+           'from_': '+someNumber', 'to': '+1someNumber'}
     # client = Client(current_app.config['TWILIO_ACCOUNT_SID'],
     # current_app.config['TWILIO_AUTH_TOKEN'])
     print(current_app.config)
@@ -65,8 +65,8 @@ def send_message():
     # message = client.messages.create(**msg)
     #    .create(
     #         body="One long message",
-    #         from_='+18593748177',
-    #         to='+19177108047'
+    #         from_='+someNumber',
+    #         to='+1someNumber'
     #     )
 
     msg['sid'] = message.id if message else "Fred"
