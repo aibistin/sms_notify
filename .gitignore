@@ -142,3 +142,7 @@ cython_debug/
 .temp
 config.py
 app.db
+logs/
+*~
+*.swp
+*.swo
