@@ -13,7 +13,8 @@ from flask_migrate import Migrate
 from flask_mail import Mail
 from flask_bootstrap import Bootstrap
 from flask_moment import Moment
-# from flask_babel import Babel
+from elasticsearch import Elasticsearch
+from flask_babel import Babel
 #
 # Register the error blueprint. Import bp right before register.
 # from app.errors import bp as errors_bp
@@ -51,6 +52,7 @@ login.login_message = 'Get thee hence until thou loggest in!'
 mail = Mail()
 bootstrap = Bootstrap()
 moment = Moment()
+babel = Babel()
 
 
 def create_app(config_class=Config):
@@ -63,7 +65,7 @@ def create_app(config_class=Config):
     mail.init_app(app)
     bootstrap.init_app(app)
     moment.init_app(app)
-    # babel.init_app(app)
+    babel.init_app(app)
 
     #
     # Register the error blueprint. Import bp right before register.
@@ -75,6 +77,9 @@ def create_app(config_class=Config):
     # Register the main blueprint.
     from app.main import bp as main_bp
     app.register_blueprint(main_bp)
+    app.elasticsearch = Elasticsearch([app.config['ELASTICSEARCH_URL']]) \
+        if app.config['ELASTICSEARCH_URL'] else None
+
 
     if not app.debug:
 
@@ -138,9 +143,10 @@ def create_app(config_class=Config):
 # or: import flask-dotenv
 # put into the .flaskenv
 
-# @babel.localeselector
-# def get_locale():
-#     return request.accept_languages.best_match(app.config['LANGUAGES'])
-# Last line to prevent circular references
+@babel.localeselector
+def get_locale():
+    return request.accept_languages.best_match(current_app.config['LANGUAGES'])
 
+
+#   Last line to prevent circular references
 from app import models

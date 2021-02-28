@@ -1,12 +1,15 @@
 # app/main/routes.py
+from datetime import datetime
 from twilio.rest import Client
 # HTML template module
 from flask import flash, redirect, render_template, request, url_for
+from flask import g
+from flask_babel import _, lazy_gettext as _l
 from flask_login import current_user, login_required
-from datetime import datetime
 from app import current_app, db
-from app.main.forms import EditProfileForm, EmptyForm, MessageForm
 from app.main import bp
+from app.main.forms import EditProfileForm, EmptyForm, MessageForm
+from app.main.forms import SearchForm
 # Commmunicate logins with the db
 from app.models import User, Message
 
@@ -16,6 +19,8 @@ def before_request():
     if current_user.is_authenticated:
         current_user.last_seen = datetime.utcnow()
         db.session.commit()
+        g.search_form = SearchForm()
+#    g.locale = str(get_locale())
 
 
 @bp.route("/", methods=['GET', 'POST'])
@@ -81,7 +86,7 @@ def send_message():
 @bp.route('/user/<username>', methods=['GET', 'POST'])
 @login_required
 def user(username):
-    print("INSIDE /user/" + username );
+    print("INSIDE /user/" + username)
     user = User.query.filter_by(username=username).first_or_404()
     messages = current_user.followed_messages().all()
 
@@ -164,3 +169,20 @@ def unfollow(username):
 def explore():
     messages = Message.query.order_by(Message.timestamp.desc()).all()
     return render_template('index.html', title='Explore', messages=messages)
+
+
+@bp.route('/search')
+@login_required
+def search():
+    # Use this type of form validation for GET requests
+    if not g.search_form.validate():
+        return redirect(url_for('main.explore'))
+    page = request.args.get('page', 1, type=int)
+    messages, total = Message.search(
+        g.search_form.q.data, page, current_app.config['MESSAGES_PER_PAGE'])
+    next_url = url_for('main.search', q.search_form.q.data, page=page + 1) \
+        if total > current_app.config['MESSAGES_PER_PAGE'] * page else None
+    prev_url = url_for('main.search', q.search_form.q.data, page=page - 1) \
+        if page > 1 else None
+    return render_template('search.html', title=_('Search'), messages=messages,
+                           next_url=next_url, prev_url=prev_url)

@@ -17,7 +17,7 @@ from app.models import User
 @bp.route('/login', methods=['GET', 'POST'])
 def login():
     if current_user.is_authenticated:
-        return redirect(url_for('home'))
+        return redirect(url_for('main.home'))
 
     form = LoginForm()
     if form.validate_on_submit():
@@ -30,7 +30,7 @@ def login():
         next_page = request.args.get('next')
         # Redirects only if the url is relative. No external redirects
         if not next_page or url_parse(next_page).netloc != '':
-            next_page = url_for('home')
+            next_page = url_for('main.home')
         flash('Login requested for user {}, remember_me {}'.format(
             form.username.data, form.remember_me.data))
         return redirect(next_page)
@@ -41,7 +41,7 @@ def login():
 @bp.route('/register', methods=['GET', 'POST'])
 def register():
     if current_user.is_authenticated:
-        return redirect(url_for('home'))
+        return redirect(url_for('main.home'))
 
     form = RegistrationForm()
     if form.validate_on_submit():
@@ -58,13 +58,13 @@ def register():
 @bp.route('/logout')
 def logout():
     logout_user()
-    return redirect(url_for('home'))
+    return redirect(url_for('main.home'))
 
 
 @bp.route('/reset_password_request', methods=['GET', 'POST'])
 def reset_password_request():
     if current_user.is_authenticated:
-        return redirect(url_for('home'))
+        return redirect(url_for('main.home'))
     form = ResetPasswordRequestForm()
 
     if form.validate_on_submit():
@@ -79,11 +79,11 @@ def reset_password_request():
 @bp.route('/reset_password/<token>', methods=['GET', 'POST'])
 def reset_password(token):
     if current_user.is_authenticated:
-        return redirect(uri_for('home'))
+        return redirect(uri_for('main.home'))
     user = User.verify_reset_password_token(token)
     if not user: 
         flash("Hey! we cant find you in our system")
-        return redirect(uri_for('home'))
+        return redirect(uri_for('main.home'))
     form = ResetPasswordForm()
     if form.validate_on_submit():
         user.set_password(form.password.data)

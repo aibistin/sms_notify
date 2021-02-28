@@ -140,7 +140,7 @@ cython_debug/
 # I added for Flask
 .flaskenv
 .temp
-config.py
+# config.py
 app.db
 logs/
 *~
