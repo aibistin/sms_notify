@@ -79,6 +79,20 @@ class User(UserMixin, db.Model):
     def is_following(self, user):
         return self.followed.filter(followers.c.followed_id == user.id).count() > 0
 
+    private_messages_sent = db.relationship('PrivateMessage',
+                                    foreign_keys='PrivateMessage.sender_id',
+                                    backref='sender', lazy='dynamic')
+
+    private_messages_received = db.relationship('PrivateMessage',
+									foreign_keys='PrivateMessage.recipient_id',
+									backref='recipient', lazy='dynamic')
+
+    last_private_message_read_time = db.Column(db.DateTime)
+
+    def new_private_messages(self):
+	    last_read_time = self.last_private_message_read_time or datetime(1900, 1, 1)
+	    return PrivateMessage.query.filter_by(recipient=self).filter( PrivateMessage.timestamp > last_read_time).count()
+
     # Tells Python to print objects of this class
     def __repr__(self):
         return '<User {}>'.format(self.username)
@@ -91,7 +105,6 @@ def load_user(id):
 # ------------------------------------------------------------------------------
 #  Searching For Stuff
 # ------------------------------------------------------------------------------
-
 
 class SearchableMixin(object):
     @classmethod
@@ -151,5 +164,20 @@ class Message(SearchableMixin, db.Model):
     def __repr__(self):
         return '<Message {}>'.format(self.body)
 
+# ------------------------------------------------------------------------------
+#  Message Class
+#  Note: Run `>>> Message.reindex()` in the flask shell to set up the elasticsearch 
+#        index. 
+# ------------------------------------------------------------------------------
+
+class PrivateMessage(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    sender_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    recipient_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    body = db.Column(db.String(140))
+    timestamp = db.Column(db.DateTime, index=True, default=datetime.utcnow)
+
+    def __repr__(self):
+        return '<PrivateMessage {}>'.format(self.body)
 
 # ------------------------------------------------------------------------------

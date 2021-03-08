@@ -31,8 +31,8 @@ def login():
         # Redirects only if the url is relative. No external redirects
         if not next_page or url_parse(next_page).netloc != '':
             next_page = url_for('main.home')
-        flash('Login requested for user {}, remember_me {}'.format(
-            form.username.data, form.remember_me.data))
+        # flash('Login requested for user {}, remember_me {}'.format(
+        #     form.username.data, form.remember_me.data))
         return redirect(next_page)
 
     return render_template("auth/login.html", title=current_app.config['TITLE'] + " - Login", form=form)

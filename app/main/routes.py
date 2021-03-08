@@ -9,9 +9,9 @@ from flask_login import current_user, login_required
 from app import current_app, db
 from app.main import bp
 from app.main.forms import EditProfileForm, EmptyForm, MessageForm
-from app.main.forms import SearchForm
+from app.main.forms import PrivateMessageForm, SearchForm
 # Commmunicate logins with the db
-from app.models import User, Message
+from app.models import User, Message, PrivateMessage
 
 
 @bp.before_request
@@ -78,6 +78,38 @@ def send_message():
     # print(message.sid)
     return render_template("index.html", title=current_app.config['TITLE'] + " - Send", form=form, msg=msg)
 
+
+@bp.route('/send_private_message/<recipient>', methods=['GET', 'POST'])
+@login_required
+def send_private_message(recipient):
+    user = User.query.filter_by(username=recipient).first_or_404()
+    form = PrivateMessageForm()
+    if form.validate_on_submit():
+        msg = PrivateMessage(sender=current_user, recipient=user,
+                      body=form.message.data)
+        db.session.add(msg)
+        db.session.commit()
+        flash(_('Your message has been sent.'))
+        return redirect(url_for('main.user', username=recipient))
+    return render_template('send_private_message.html', title=_('Send Message'),
+                           form=form, recipient=recipient)
+
+@bp.route('/private_messages')
+@login_required
+def private_messages():
+    current_user.last_private_message_read_time = datetime.utcnow()
+    db.session.commit()
+    page = request.args.get('page', 1, type=int)
+    messages = current_user.private_messages_received.order_by(
+        PrivateMessage.timestamp.desc()).paginate(
+            page, current_app.config['MESSAGES_PER_PAGE'], False)
+    next_url = url_for('main.private_messages', page=messages.next_num) \
+        if messages.has_next else None
+    prev_url = url_for('main.private_messages', page=messages.prev_num) \
+        if messages.has_prev else None
+    return render_template('private_messages.html', messages=messages.items,
+                           next_url=next_url, prev_url=prev_url)
+						   
 # ------------------------------------------------------------------------------
 #    User Profile
 # ------------------------------------------------------------------------------

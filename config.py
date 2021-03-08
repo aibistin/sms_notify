@@ -41,4 +41,4 @@ class Config(object):
     #
     # Elasticsearch
     ELASTICSEARCH_URL = os.environ.get('ELASTICSEARCH_URL')
-    MESSAGES_PER_PAGE = int(os.environ.get('MESSAGES_PER_PAGE') or 20)
+    MESSAGES_PER_PAGE = int(os.environ.get('MESSAGES_PER_PAGE') or 6)
