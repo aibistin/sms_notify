@@ -42,3 +42,4 @@ class Config(object):
     # Elasticsearch
     ELASTICSEARCH_URL = os.environ.get('ELASTICSEARCH_URL')
     MESSAGES_PER_PAGE = int(os.environ.get('MESSAGES_PER_PAGE') or 6)
+    REDIS_URL         = os.environ.get('REDIS_URL') or 'redis://'

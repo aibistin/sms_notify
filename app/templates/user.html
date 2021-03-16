@@ -21,26 +21,36 @@
 </table>
 
 {% if user == current_user %}
-<p></p><a href="{{ url_for('main.edit_profile') }}">Edit Profile</a></p>
-{% elif not current_user.is_following(user) %}
-<p>
-    <form action="{{ url_for('main.follow', username=user.username) }}" method="post">
-        {{ form.hidden_tag() }}
-        {{ form.submit(value='Follow') }}
-    </form>
-</p>
-{% else %}
-<p>
-    <form action="{{ url_for('main.unfollow', username=user.username )}}" method="post">
-        {{ form.hidden_tag() }}
-        {{ form.submit(value='Un-Follow') }}
-    </form>
-</p>
-{% endif %}
+    <p><a href="{{ url_for('main.edit_profile') }}">Edit Profile</a></p>
 
-{% for msg in messages %}
-    {% include '_message.html' %}
-{% endfor %}
+    {% if not current_user.get_task_in_progress('export_messages') %}
+    <p>
+        <a href="{{ url_for('main.export_messages') }}">
+            {{ _('Export your messages') }}
+        </a>
+    </p>
+    {% endif %}
+
+    {% elif not current_user.is_following(user) %}
+    <p>
+        <form action="{{ url_for('main.follow', username=user.username) }}" method="post">
+            {{ form.hidden_tag() }}
+            {{ form.submit(value='Follow') }}
+        </form>
+    </p>
+    {% else %}
+    <p>
+        <form action="{{ url_for('main.unfollow', username=user.username )}}" method="post">
+            {{ form.hidden_tag() }}
+            {{ form.submit(value='Un-Follow') }}
+        </form>
+    </p>
+    {% endif %}
+
+    {% for msg in messages %}
+        {% include '_message.html' %}
+    {% endfor %}
+
     <nav aria-label="...">
         <ul class="pager">
             <li class="previous{% if not prev_url %} disabled{% endif %}">
@@ -55,9 +65,4 @@
             </li>
         </ul>
     </nav>
-
-
-
-
-
 {% endblock %}

@@ -1,4 +1,7 @@
 # app/models.py
+import json
+import redis
+import rq
 from datetime import datetime
 from time import time
 from hashlib import md5
@@ -31,6 +34,8 @@ class User(UserMixin, db.Model):
     about_me = db.Column(db.String(140))
     last_seen = db.Column(db.DateTime, default=datetime.utcnow)
     messages = db.relationship('Message', backref='sender', lazy='dynamic')
+    tasks = db.relationship('Task', backref='user', lazy='dynamic')
+
 
     followed = db.relationship(
         'User', secondary=followers,
@@ -79,6 +84,7 @@ class User(UserMixin, db.Model):
     def is_following(self, user):
         return self.followed.filter(followers.c.followed_id == user.id).count() > 0
 
+
     private_messages_sent = db.relationship('PrivateMessage',
                                     foreign_keys='PrivateMessage.sender_id',
                                     backref='sender', lazy='dynamic')
@@ -89,13 +95,34 @@ class User(UserMixin, db.Model):
 
     last_private_message_read_time = db.Column(db.DateTime)
 
+    notifications = db.relationship('Notification', backref='user', lazy='dynamic')
+
     def new_private_messages(self):
 	    last_read_time = self.last_private_message_read_time or datetime(1900, 1, 1)
 	    return PrivateMessage.query.filter_by(recipient=self).filter( PrivateMessage.timestamp > last_read_time).count()
 
+    def add_notification(self, name, data):
+        self.notifications.filter_by(name=name).delete()
+        n = Notification(name=name, payload_json=json.dumps(data), user=self)
+        db.session.add(n)
+        return n
+
+    def launch_task(self, name, description, *args, **kwargs):
+        rq_job = current_app.task_queue.enqueue('app.tasks.' + name, self.id, *args, **kwargs)
+        task = Task(id=rq_job.get_id(), name=name, description=description, user=self)
+        db.session.add(task)
+        return task
+
+    def get_tasks_in_progress(self):
+        return Task.query.filter_by(user=self, complete=False).all()
+
+    def get_task_in_progress(self, name):
+        return Task.query.filter_by(name=name, user=self, complete=False).first()
+
     # Tells Python to print objects of this class
     def __repr__(self):
         return '<User {}>'.format(self.username)
+
 
 
 @ login.user_loader
@@ -165,7 +192,7 @@ class Message(SearchableMixin, db.Model):
         return '<Message {}>'.format(self.body)
 
 # ------------------------------------------------------------------------------
-#  Message Class
+#  Private Message Class
 #  Note: Run `>>> Message.reindex()` in the flask shell to set up the elasticsearch 
 #        index. 
 # ------------------------------------------------------------------------------
@@ -181,3 +208,41 @@ class PrivateMessage(db.Model):
         return '<PrivateMessage {}>'.format(self.body)
 
 # ------------------------------------------------------------------------------
+# Notification  Class
+# Notify of new PrivateMessage for the User
+# Being generic, it's not entirely tied to PrivateMessage notifications
+# ------------------------------------------------------------------------------
+
+class Notification(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(128), index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    timestamp = db.Column(db.Float, index=True, default=time)
+    payload_json = db.Column(db.Text)
+
+    def get_data(self):
+        return json.loads(str(self.payload_json))
+
+# ------------------------------------------------------------------------------
+# Task  Class
+# Uses Redis
+# ------------------------------------------------------------------------------
+
+class Task(db.Model):
+    id = db.Column(db.String(36), primary_key=True)
+    name = db.Column(db.String(128), index=True)
+    description = db.Column(db.String(128))
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    complete = db.Column(db.Boolean, default=False)
+
+    def get_rq_job(self):
+        try:
+            rq_job = rq.job.Job.fetch(self.id, connection=current_app.redis)
+        except (redis.exceptions.RedisError, rq.exceptions.NoSuchJobError):
+            return None
+        return rq_job
+
+    def get_progress(self):
+        job = self.get_rq_job()
+        prog = job.meta.get('progress', 0)
+        return job.meta.get('progress', 0) if job is not None else 100
