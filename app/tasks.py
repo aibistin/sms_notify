@@ -40,7 +40,7 @@ def export_messages(user_id):
             data.append({'body': msg.body, 'timestamp': msg.timestamp.isoformat() + 'Z'})
             time.sleep(5)
             i += 1
-            _set_task_progress(100 * i / total_msgs)
+            _set_task_progress(round(100 * i / total_msgs,2))
 
         send_email('[SMS-Notify] Your sms messages',
                 sender=app.config['ADMINS'][0], recipients=[user.email],
